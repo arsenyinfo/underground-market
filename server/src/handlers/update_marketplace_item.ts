@@ -1,28 +1,71 @@
 
+import { db } from '../db';
+import { marketplaceItemsTable } from '../db/schema';
 import { type UpdateMarketplaceItemInput, type MarketplaceItem } from '../schema';
+import { eq, sql } from 'drizzle-orm';
 
-export async function updateMarketplaceItem(input: UpdateMarketplaceItemInput): Promise<MarketplaceItem | null> {
-    // This is a placeholder declaration! Real code should be implemented here.
-    // The goal of this handler is updating an existing marketplace item in the database.
-    // This would typically involve an UPDATE query on the marketplace_items table with WHERE id = input.id,
-    // setting only the fields that are provided in the input, and updating the updated_at timestamp.
-    
-    // Mock response for item with ID 1
-    if (input.id === 1) {
-        return Promise.resolve({
-            id: 1,
-            title: input.title || "Mountain Bike - No Questions Asked",
-            description: input.description || "High-end mountain bike, barely used. Cash only, meet at night.",
-            price: input.price || 800,
-            category: input.category || "bikes" as const,
-            condition: input.condition || "excellent" as const,
-            location: input.location || "Industrial District",
-            images: input.images || ["https://example.com/bike1.jpg"],
-            is_available: input.is_available !== undefined ? input.is_available : true,
-            posted_at: new Date(Date.now() - 86400000), // Yesterday
-            updated_at: new Date() // Now
-        } as MarketplaceItem);
+export const updateMarketplaceItem = async (input: UpdateMarketplaceItemInput): Promise<MarketplaceItem | null> => {
+  try {
+    // First check if the item exists
+    const existingItem = await db.select()
+      .from(marketplaceItemsTable)
+      .where(eq(marketplaceItemsTable.id, input.id))
+      .execute();
+
+    if (existingItem.length === 0) {
+      return null;
     }
+
+    // Build update object with only provided fields
+    const updateData: Record<string, any> = {};
     
-    return Promise.resolve(null);
-}
+    if (input.title !== undefined) {
+      updateData['title'] = input.title;
+    }
+    if (input.description !== undefined) {
+      updateData['description'] = input.description;
+    }
+    if (input.price !== undefined) {
+      updateData['price'] = input.price.toString(); // Convert number to string for numeric column
+    }
+    if (input.category !== undefined) {
+      updateData['category'] = input.category;
+    }
+    if (input.condition !== undefined) {
+      updateData['condition'] = input.condition;
+    }
+    if (input.location !== undefined) {
+      updateData['location'] = input.location;
+    }
+    if (input.images !== undefined) {
+      updateData['images'] = input.images;
+    }
+    if (input.is_available !== undefined) {
+      updateData['is_available'] = input.is_available;
+    }
+
+    // Always update the updated_at timestamp
+    updateData['updated_at'] = sql`now()`;
+
+    // Perform the update
+    const result = await db.update(marketplaceItemsTable)
+      .set(updateData)
+      .where(eq(marketplaceItemsTable.id, input.id))
+      .returning()
+      .execute();
+
+    if (result.length === 0) {
+      return null;
+    }
+
+    // Convert numeric fields back to numbers before returning
+    const updatedItem = result[0];
+    return {
+      ...updatedItem,
+      price: parseFloat(updatedItem.price) // Convert string back to number
+    };
+  } catch (error) {
+    console.error('Marketplace item update failed:', error);
+    throw error;
+  }
+};

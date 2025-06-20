@@ -1,81 +1,70 @@
 
+import { db } from '../db';
+import { marketplaceItemsTable } from '../db/schema';
 import { type SearchMarketplaceItemsInput, type MarketplaceItem } from '../schema';
+import { and, eq, gte, lte, ilike, desc, type SQL } from 'drizzle-orm';
 
-export async function searchMarketplaceItems(input: SearchMarketplaceItemsInput): Promise<MarketplaceItem[]> {
-    // This is a placeholder declaration! Real code should be implemented here.
-    // The goal of this handler is searching and filtering marketplace items based on the provided criteria.
-    // This would typically involve a complex SELECT query with WHERE clauses for filtering,
-    // ILIKE for text search, and LIMIT/OFFSET for pagination.
-    
-    // Mock data that simulates search results
-    const mockItems: MarketplaceItem[] = [
-        {
-            id: 1,
-            title: "Mountain Bike - No Questions Asked",
-            description: "High-end mountain bike, barely used. Cash only, meet at night.",
-            price: 800,
-            category: "bikes" as const,
-            condition: "excellent" as const,
-            location: "Industrial District",
-            images: ["https://example.com/bike1.jpg"],
-            is_available: true,
-            posted_at: new Date(),
-            updated_at: new Date()
-        },
-        {
-            id: 2,
-            title: "iPhone 15 Pro - Unlocked",
-            description: "Latest iPhone, completely unlocked. Previous owner no longer needs it.",
-            price: 600,
-            category: "phones" as const,
-            condition: "mint" as const,
-            location: "Downtown Alley",
-            images: ["https://example.com/phone1.jpg"],
-            is_available: true,
-            posted_at: new Date(),
-            updated_at: new Date()
-        },
-        {
-            id: 3,
-            title: "Gold Watch Collection",
-            description: "Various luxury watches. Rolex, Omega, Cartier. Authentic papers included.",
-            price: 2500,
-            category: "watches" as const,
-            condition: "good" as const,
-            location: "Warehouse District",
-            images: ["https://example.com/watches1.jpg"],
-            is_available: true,
-            posted_at: new Date(),
-            updated_at: new Date()
-        }
-    ];
-    
-    // Simple filtering simulation based on input parameters
-    let filteredItems = mockItems;
-    
+export const searchMarketplaceItems = async (input: SearchMarketplaceItemsInput): Promise<MarketplaceItem[]> => {
+  try {
+    // Build conditions array
+    const conditions: SQL<unknown>[] = [];
+
+    // Text search in title and description
+    if (input.query) {
+      conditions.push(
+        ilike(marketplaceItemsTable.title, `%${input.query}%`)
+      );
+    }
+
+    // Category filter
     if (input.category) {
-        filteredItems = filteredItems.filter(item => item.category === input.category);
+      conditions.push(eq(marketplaceItemsTable.category, input.category));
     }
-    
+
+    // Condition filter
     if (input.condition) {
-        filteredItems = filteredItems.filter(item => item.condition === input.condition);
+      conditions.push(eq(marketplaceItemsTable.condition, input.condition));
     }
-    
+
+    // Price range filters
     if (input.min_price !== undefined) {
-        filteredItems = filteredItems.filter(item => item.price >= input.min_price!);
+      conditions.push(gte(marketplaceItemsTable.price, input.min_price.toString()));
     }
-    
+
     if (input.max_price !== undefined) {
-        filteredItems = filteredItems.filter(item => item.price <= input.max_price!);
+      conditions.push(lte(marketplaceItemsTable.price, input.max_price.toString()));
     }
-    
+
+    // Location filter (partial match)
+    if (input.location) {
+      conditions.push(ilike(marketplaceItemsTable.location, `%${input.location}%`));
+    }
+
+    // Available only filter
     if (input.available_only) {
-        filteredItems = filteredItems.filter(item => item.is_available);
+      conditions.push(eq(marketplaceItemsTable.is_available, true));
     }
+
+    // Build the final query
+    const baseQuery = db.select().from(marketplaceItemsTable);
     
-    // Apply pagination
-    const startIndex = input.offset || 0;
-    const endIndex = startIndex + (input.limit || 20);
-    
-    return Promise.resolve(filteredItems.slice(startIndex, endIndex));
-}
+    const queryWithConditions = conditions.length > 0 
+      ? baseQuery.where(conditions.length === 1 ? conditions[0] : and(...conditions))
+      : baseQuery;
+
+    const results = await queryWithConditions
+      .orderBy(desc(marketplaceItemsTable.posted_at))
+      .limit(input.limit)
+      .offset(input.offset)
+      .execute();
+
+    // Convert numeric fields back to numbers
+    return results.map(item => ({
+      ...item,
+      price: parseFloat(item.price)
+    }));
+  } catch (error) {
+    console.error('Marketplace items search failed:', error);
+    throw error;
+  }
+};

@@ -1,24 +1,33 @@
 
+import { db } from '../db';
+import { marketplaceItemsTable } from '../db/schema';
 import { type CreateMarketplaceItemInput, type MarketplaceItem } from '../schema';
 
-export async function createMarketplaceItem(input: CreateMarketplaceItemInput): Promise<MarketplaceItem> {
-    // This is a placeholder declaration! Real code should be implemented here.
-    // The goal of this handler is creating a new marketplace item and persisting it in the database.
-    // This would typically involve inserting into the marketplace_items table using Drizzle ORM.
-    
-    const now = new Date();
-    
-    return Promise.resolve({
-        id: Math.floor(Math.random() * 1000), // Placeholder ID
+export const createMarketplaceItem = async (input: CreateMarketplaceItemInput): Promise<MarketplaceItem> => {
+  try {
+    // Insert marketplace item record
+    const result = await db.insert(marketplaceItemsTable)
+      .values({
         title: input.title,
         description: input.description,
-        price: input.price,
+        price: input.price.toString(), // Convert number to string for numeric column
         category: input.category,
         condition: input.condition,
         location: input.location,
         images: input.images,
-        is_available: true,
-        posted_at: now,
-        updated_at: now
-    } as MarketplaceItem);
-}
+        is_available: true // Default value
+      })
+      .returning()
+      .execute();
+
+    // Convert numeric fields back to numbers before returning
+    const item = result[0];
+    return {
+      ...item,
+      price: parseFloat(item.price) // Convert string back to number
+    };
+  } catch (error) {
+    console.error('Marketplace item creation failed:', error);
+    throw error;
+  }
+};
