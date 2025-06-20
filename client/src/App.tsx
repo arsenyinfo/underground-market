@@ -79,24 +79,26 @@ function App() {
             </div>
           </div>
 
-          <div className="flex flex-col md:flex-row justify-between items-center mb-6 gap-4">
+          <div className="mb-6 space-y-4">
             <SearchFilters onSearch={handleSearch} isLoading={isLoading} />
-            <Dialog open={isCreateFormOpen} onOpenChange={setIsCreateFormOpen}>
-              <DialogTrigger asChild>
-                <Button
-                  size="lg"
-                  className="bg-red-800 hover:bg-red-700 text-white shadow-lg text-lg px-8 py-3 w-full md:w-auto animate-pulse-glow"
-                >
-                  🚨 List Your Item
-                </Button>
-              </DialogTrigger>
-              <DialogContent className="bg-gray-900 border-gray-800 text-gray-200 max-w-2xl p-6">
-                <DialogHeader>
-                  <DialogTitle className="text-xl text-gray-100">Create New Listing</DialogTitle>
-                </DialogHeader>
-                <CreateItemForm onSuccess={handleItemCreated} onCancel={() => setIsCreateFormOpen(false)} />
-              </DialogContent>
-            </Dialog>
+            <div className="flex justify-end">
+              <Dialog open={isCreateFormOpen} onOpenChange={setIsCreateFormOpen}>
+                <DialogTrigger asChild>
+                  <Button
+                    size="lg"
+                    className="bg-red-800 hover:bg-red-700 text-white shadow-lg text-lg px-8 py-3 w-full md:w-auto animate-pulse-glow"
+                  >
+                    🚨 List Your Item
+                  </Button>
+                </DialogTrigger>
+                <DialogContent className="bg-gray-900 border-gray-800 text-gray-200 max-w-2xl p-6">
+                  <DialogHeader>
+                    <DialogTitle className="text-xl text-gray-100">Create New Listing</DialogTitle>
+                  </DialogHeader>
+                  <CreateItemForm onSuccess={handleItemCreated} onCancel={() => setIsCreateFormOpen(false)} />
+                </DialogContent>
+              </Dialog>
+            </div>
           </div>
           
           <div className="mt-8">
