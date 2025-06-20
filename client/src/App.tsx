@@ -85,9 +85,9 @@ function App() {
               <DialogTrigger asChild>
                 <Button
                   size="lg"
-                  className="bg-green-600 hover:bg-green-700 text-white shadow-lg text-lg px-8 py-3 w-full md:w-auto animate-pulse-glow"
+                  className="bg-red-800 hover:bg-red-700 text-white shadow-lg text-lg px-8 py-3 w-full md:w-auto animate-pulse-glow"
                 >
-                  ➕ List Your Item
+                  🚨 List Your Item
                 </Button>
               </DialogTrigger>
               <DialogContent className="bg-gray-900 border-gray-800 text-gray-200 max-w-2xl p-6">
