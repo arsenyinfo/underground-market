@@ -4,6 +4,9 @@ import { trpc } from '@/utils/trpc';
 import { ItemGrid } from '@/components/ItemGrid';
 import { SearchFilters } from '@/components/SearchFilters';
 import { Header } from '@/components/Header';
+import { Button } from '@/components/ui/button';
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from '@/components/ui/dialog';
+import { CreateItemForm } from '@/components/CreateItemForm';
 import type { MarketplaceItem, SearchMarketplaceItemsInput } from '../../server/src/schema';
 
 function App() {
@@ -14,6 +17,7 @@ function App() {
     limit: 20,
     offset: 0
   });
+  const [isCreateFormOpen, setIsCreateFormOpen] = useState(false);
 
   const loadItems = useCallback(async () => {
     setIsLoading(true);
@@ -46,6 +50,13 @@ function App() {
     setSearchFilters(filters);
   };
 
+  const handleItemCreated = (newItem: MarketplaceItem) => {
+    // Refresh the list after a new item is created
+    loadItems();
+    setIsCreateFormOpen(false);
+    console.log('New item listed:', newItem.title);
+  };
+
   return (
     <div className="min-h-screen bg-gradient-to-br from-gray-900 via-black to-gray-800">
       {/* Subtle grid pattern overlay */}
@@ -68,7 +79,25 @@ function App() {
             </div>
           </div>
 
-          <SearchFilters onSearch={handleSearch} isLoading={isLoading} />
+          <div className="flex flex-col md:flex-row justify-between items-center mb-6 gap-4">
+            <SearchFilters onSearch={handleSearch} isLoading={isLoading} />
+            <Dialog open={isCreateFormOpen} onOpenChange={setIsCreateFormOpen}>
+              <DialogTrigger asChild>
+                <Button
+                  size="lg"
+                  className="bg-green-600 hover:bg-green-700 text-white shadow-lg text-lg px-8 py-3 w-full md:w-auto animate-pulse-glow"
+                >
+                  ➕ List Your Item
+                </Button>
+              </DialogTrigger>
+              <DialogContent className="bg-gray-900 border-gray-800 text-gray-200 max-w-2xl p-6">
+                <DialogHeader>
+                  <DialogTitle className="text-xl text-gray-100">Create New Listing</DialogTitle>
+                </DialogHeader>
+                <CreateItemForm onSuccess={handleItemCreated} onCancel={() => setIsCreateFormOpen(false)} />
+              </DialogContent>
+            </Dialog>
+          </div>
           
           <div className="mt-8">
             {isLoading ? (
@@ -78,7 +107,7 @@ function App() {
               </div>
             ) : items.length === 0 ? (
               <div className="text-center py-12">
-                <div className="text-6xl mb-4">🕳️</div>
+                <div className="text-6xl mb-4">🕵️‍♂️</div>
                 <h3 className="text-xl font-semibold text-gray-300 mb-2">Nothing Found</h3>
                 <p className="text-gray-500">The network is quiet right now. Check back later.</p>
               </div>
